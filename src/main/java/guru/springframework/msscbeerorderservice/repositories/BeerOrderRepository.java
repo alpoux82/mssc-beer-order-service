@@ -14,7 +14,7 @@ import java.util.UUID;
 
 public interface BeerOrderRepository extends JpaRepository<BeerOrder, UUID> {
 
-    Page<BeerOrder> findAllbyCustomer(Customer customer, Pageable pageable);
+    Page<BeerOrder> findAllByCustomer(Customer customer, Pageable pageable);
 
     List<BeerOrder> findAllByOrderStatus(OrderStatus orderStatus);
 

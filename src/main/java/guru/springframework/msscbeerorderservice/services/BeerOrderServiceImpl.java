@@ -33,7 +33,7 @@ public class BeerOrderServiceImpl implements BeerOrderService {
     @Override
     public BeerOrderPagedList listOrders(UUID customerId, Pageable pageable) {
 
-        Page<BeerOrder> beerOrderPage = beerOrderRepository.findAllbyCustomer(
+        Page<BeerOrder> beerOrderPage = beerOrderRepository.findAllByCustomer(
                 customerRepository.findById(customerId).orElse(null), pageable);
         return new BeerOrderPagedList(beerOrderPage.stream()
                 .map(beerOrderMapper::beerOrderToBeerOrderDto)
