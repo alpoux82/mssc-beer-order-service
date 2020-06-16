@@ -3,7 +3,7 @@ package guru.springframework.msscbeerorderservice.web.mappers;
 import guru.springframework.msscbeerorderservice.domain.BeerOrderLine;
 import guru.springframework.msscbeerorderservice.services.beer.BeerService;
 import guru.springframework.msscbeerorderservice.services.beer.model.BeerDto;
-import guru.springframework.msscbeerorderservice.web.model.BeerOrderLineDto;
+import guru.sfg.brewery.model.BeerOrderLineDto;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 
