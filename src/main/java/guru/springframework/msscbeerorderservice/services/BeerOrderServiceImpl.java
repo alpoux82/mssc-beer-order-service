@@ -2,7 +2,7 @@ package guru.springframework.msscbeerorderservice.services;
 
 import guru.springframework.msscbeerorderservice.domain.BeerOrder;
 import guru.springframework.msscbeerorderservice.domain.Customer;
-import guru.springframework.msscbeerorderservice.domain.OrderStatus;
+import guru.springframework.msscbeerorderservice.domain.BeerOrderStatus;
 import guru.springframework.msscbeerorderservice.repositories.BeerOrderRepository;
 import guru.springframework.msscbeerorderservice.repositories.CustomerRepository;
 import guru.springframework.msscbeerorderservice.web.mappers.BeerOrderMapper;
@@ -46,7 +46,7 @@ public class BeerOrderServiceImpl implements BeerOrderService {
         BeerOrder beerOrder = beerOrderMapper.beerOrderDtoToBeerOrder(beerOrderDto);
         beerOrder.setId(null);
         beerOrder.setCustomer(customer);
-        beerOrder.setOrderStatus(OrderStatus.NEW);
+        beerOrder.setBeerOrderStatus(BeerOrderStatus.NEW);
         beerOrder.getBeerOrderLines().forEach(line -> line.setBeerOrder(beerOrder));
 
         return beerOrderMapper.beerOrderToBeerOrderDto(beerOrderRepository.saveAndFlush(beerOrder));
@@ -61,7 +61,7 @@ public class BeerOrderServiceImpl implements BeerOrderService {
     @Override
     public void pickupOrder(UUID customerId, UUID orderId) {
         BeerOrder beerOrder = getCustomerOrder(customerId, orderId).orElseThrow(NoSuchElementException::new);
-        beerOrder.setOrderStatus(OrderStatus.PICKED_UP);
+        beerOrder.setBeerOrderStatus(BeerOrderStatus.PICKED_UP);
         beerOrderRepository.save(beerOrder);
     }
 

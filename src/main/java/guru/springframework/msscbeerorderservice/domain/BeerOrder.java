@@ -23,13 +23,13 @@ public class BeerOrder extends BaseEntity {
 
     @Builder
     public BeerOrder(UUID id, Long version, Timestamp createdDate, Timestamp lastModifiedDate, String customerRef,
-                     Customer customer, Set<BeerOrderLine> beerOrderLines, OrderStatus orderStatus,
+                     Customer customer, Set<BeerOrderLine> beerOrderLines, BeerOrderStatus beerOrderStatus,
                      String orderStatusCallbackUrl) {
         super(id, version, createdDate, lastModifiedDate);
         this.customerRef = customerRef;
         this.customer = customer;
         this.beerOrderLines = beerOrderLines;
-        this.orderStatus = orderStatus;
+        this.beerOrderStatus = beerOrderStatus;
         this.orderStatusCallbackUrl = orderStatusCallbackUrl;
     }
 
@@ -39,6 +39,6 @@ public class BeerOrder extends BaseEntity {
     @OneToMany(mappedBy = "beerOrder", cascade = CascadeType.ALL)
     @Fetch(FetchMode.JOIN)
     private Set<BeerOrderLine> beerOrderLines;
-    private OrderStatus orderStatus = OrderStatus.NEW;
+    private BeerOrderStatus beerOrderStatus = BeerOrderStatus.NEW;
     private String orderStatusCallbackUrl;
 }
