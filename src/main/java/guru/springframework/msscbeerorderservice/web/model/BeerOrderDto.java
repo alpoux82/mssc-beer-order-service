@@ -17,7 +17,7 @@ public class BeerOrderDto extends BaseItem {
     @Builder
     public BeerOrderDto(UUID id, Integer version, OffsetDateTime createdDate, OffsetDateTime lastModifiedDate,
                         UUID customerId, String customerRef, List<BeerOrderLineDto> beerOrderLines,
-                        OrderStatus orderStatus, String orderStatusCallbackUrl) {
+                        String orderStatus, String orderStatusCallbackUrl) {
         super(id, version, createdDate, lastModifiedDate);
         this.customerId = customerId;
         this.customerRef = customerRef;
@@ -29,6 +29,6 @@ public class BeerOrderDto extends BaseItem {
     private UUID customerId;
     private String customerRef;
     private List<BeerOrderLineDto> beerOrderLines;
-    private OrderStatus orderStatus;
+    private String orderStatus;
     private String orderStatusCallbackUrl;
 }
