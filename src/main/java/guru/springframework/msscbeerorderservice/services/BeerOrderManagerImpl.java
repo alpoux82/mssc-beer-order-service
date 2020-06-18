@@ -14,7 +14,9 @@ import org.springframework.statemachine.support.DefaultStateMachineContext;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import static guru.springframework.msscbeerorderservice.domain.BeerOrderEvent.VALIDATE_ORDER;
+import java.util.UUID;
+
+import static guru.springframework.msscbeerorderservice.domain.BeerOrderEvent.*;
 import static guru.springframework.msscbeerorderservice.domain.BeerOrderStatus.NEW;
 
 @RequiredArgsConstructor
@@ -37,6 +39,15 @@ public class BeerOrderManagerImpl implements BeerOrderManager {
         BeerOrder savedBeerOrder = beerOrderRepository.save(beerOrder);
         sendBeerOrderEvent(savedBeerOrder, VALIDATE_ORDER);
         return savedBeerOrder;
+    }
+
+    @Override
+    public void processValidationResult(UUID beerOrderId, Boolean isValid) {
+        BeerOrder beerOrder = beerOrderRepository.getOne(beerOrderId);
+        if (isValid)
+            sendBeerOrderEvent(beerOrder, VALIDATION_PASSED);
+        else
+            sendBeerOrderEvent(beerOrder, VALIDATION_FAILED);
     }
 
     private void sendBeerOrderEvent(BeerOrder beerOrder, BeerOrderEvent event) {
