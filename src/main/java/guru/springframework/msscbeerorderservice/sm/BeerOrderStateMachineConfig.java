@@ -21,6 +21,7 @@ import static guru.springframework.msscbeerorderservice.domain.BeerOrderStatus.*
 public class BeerOrderStateMachineConfig extends StateMachineConfigurerAdapter<BeerOrderStatus, BeerOrderEvent> {
 
     private final Action<BeerOrderStatus, BeerOrderEvent> validateOrderAction;
+    private final Action<BeerOrderStatus, BeerOrderEvent> allocateOrderAction;
 
     @Override
     public void configure(StateMachineStateConfigurer<BeerOrderStatus, BeerOrderEvent> states) throws Exception {
@@ -37,8 +38,10 @@ public class BeerOrderStateMachineConfig extends StateMachineConfigurerAdapter<B
     @Override
     public void configure(StateMachineTransitionConfigurer<BeerOrderStatus, BeerOrderEvent> transitions) throws Exception {
         transitions.withExternal()
-                .source(NEW).target(VALIDATION_PENDING).event(VALIDATE_ORDER).action(validateOrderAction)
+                    .source(NEW).target(VALIDATION_PENDING).event(VALIDATE_ORDER).action(validateOrderAction)
                 .and().withExternal()
-                .source(VALIDATION_PENDING).target(VALIDATED).event(VALIDATION_PASSED);
+                    .source(VALIDATION_PENDING).target(VALIDATED).event(VALIDATION_PASSED)
+                .and().withExternal()
+                    .source(VALIDATED).target(ALLOCATION_PENDING).event(ALLOCATE_ORDER).action(allocateOrderAction);
     }
 }
