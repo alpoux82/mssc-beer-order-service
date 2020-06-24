@@ -12,6 +12,7 @@ import org.springframework.statemachine.StateContext;
 import org.springframework.statemachine.action.Action;
 import org.springframework.stereotype.Component;
 
+import java.util.Optional;
 import java.util.UUID;
 
 import static guru.springframework.msscbeerorderservice.config.JmsConfig.VALIDATE_ORDER_QUEUE;
@@ -28,10 +29,12 @@ public class ValidateOrderAction implements Action<BeerOrderStatus, BeerOrderEve
     @Override
     public void execute(StateContext<BeerOrderStatus, BeerOrderEvent> stateContext) {
         String beerOrderId = (String) stateContext.getMessageHeader(ORDER_ID_HEADER);
-        BeerOrder beerOrder = beerOrderRepository.findOneById(UUID.fromString(beerOrderId));
+        Optional<BeerOrder> beerOrderOptional = beerOrderRepository.findById(UUID.fromString(beerOrderId));
 
-        jmsTemplate.convertAndSend(VALIDATE_ORDER_QUEUE, ValidateOrderRequest.builder()
-                .beerOrderDto(beerOrderMapper.beerOrderToBeerOrderDto(beerOrder))
-                .build());
+        beerOrderOptional.ifPresent(beerOrder -> jmsTemplate.convertAndSend(VALIDATE_ORDER_QUEUE,
+                ValidateOrderRequest.builder()
+                    .beerOrderDto(beerOrderMapper.beerOrderToBeerOrderDto(beerOrder))
+                    .build())
+        );
     }
 }

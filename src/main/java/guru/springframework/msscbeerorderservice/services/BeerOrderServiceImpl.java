@@ -8,6 +8,7 @@ import guru.springframework.msscbeerorderservice.repositories.CustomerRepository
 import guru.springframework.msscbeerorderservice.web.mappers.BeerOrderMapper;
 import guru.sfg.brewery.model.BeerOrderDto;
 import guru.sfg.brewery.model.BeerOrderPagedList;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -17,18 +18,14 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+@RequiredArgsConstructor
 @Service
 public class BeerOrderServiceImpl implements BeerOrderService {
 
     private final BeerOrderRepository beerOrderRepository;
     private final CustomerRepository customerRepository;
     private final BeerOrderMapper beerOrderMapper;
-
-    public BeerOrderServiceImpl(BeerOrderRepository beerOrderRepository, CustomerRepository customerRepository, BeerOrderMapper beerOrderMapper) {
-        this.beerOrderRepository = beerOrderRepository;
-        this.customerRepository = customerRepository;
-        this.beerOrderMapper = beerOrderMapper;
-    }
+    private final BeerOrderManager beerOrderManager;
 
     @Override
     public BeerOrderPagedList listOrders(UUID customerId, Pageable pageable) {
@@ -49,7 +46,9 @@ public class BeerOrderServiceImpl implements BeerOrderService {
         beerOrder.setBeerOrderStatus(BeerOrderStatus.NEW);
         beerOrder.getBeerOrderLines().forEach(line -> line.setBeerOrder(beerOrder));
 
-        return beerOrderMapper.beerOrderToBeerOrderDto(beerOrderRepository.saveAndFlush(beerOrder));
+        BeerOrder savedBeer = beerOrderManager.newBeerOrder(beerOrder);
+
+        return beerOrderMapper.beerOrderToBeerOrderDto(savedBeer);
     }
 
     @Override
@@ -60,9 +59,7 @@ public class BeerOrderServiceImpl implements BeerOrderService {
 
     @Override
     public void pickupOrder(UUID customerId, UUID orderId) {
-        BeerOrder beerOrder = getCustomerOrder(customerId, orderId).orElseThrow(NoSuchElementException::new);
-        beerOrder.setBeerOrderStatus(BeerOrderStatus.PICKED_UP);
-        beerOrderRepository.save(beerOrder);
+        beerOrderManager.beerOrderPickedUp(orderId);
     }
 
     private Optional<BeerOrder> getCustomerOrder(UUID customerId, UUID orderId) {
