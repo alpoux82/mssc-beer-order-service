@@ -20,13 +20,23 @@ public class BeerOrderValidationListener {
     private void listen(Message message) {
         ValidateOrderRequest request = (ValidateOrderRequest) message.getPayload();
 
-        Boolean isValid = false;
-        if (request.getBeerOrderDto().getCustomerRef().equalsIgnoreCase("fail-validation"))
-            isValid = false;
-        else
-            isValid = true;
+        boolean isValid = false;
+        boolean sendResponse = true;
 
-        jmsTemplate.convertAndSend(VALIDATE_ORDER_RESPONSE_QUEUE,
-                ValidateOrderResult.builder().orderId(request.getBeerOrderDto().getId()).isValid(isValid).build());
+        if (checkParameter(request, "fail-validation"))
+            isValid = false;
+        else if (checkParameter(request, "pass-validation"))
+            isValid = true;
+        else if (checkParameter(request, "dont-validate"))
+            sendResponse = false;
+
+        if (sendResponse)
+            jmsTemplate.convertAndSend(VALIDATE_ORDER_RESPONSE_QUEUE,
+                    ValidateOrderResult.builder().orderId(request.getBeerOrderDto().getId()).isValid(isValid).build());
+    }
+
+    private boolean checkParameter(ValidateOrderRequest request, String s) {
+        return request.getBeerOrderDto().getCustomerRef() != null &&
+                request.getBeerOrderDto().getCustomerRef().equalsIgnoreCase(s);
     }
 }

@@ -17,9 +17,11 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static guru.springframework.msscbeerorderservice.domain.BeerOrderEvent.*;
-import static guru.springframework.msscbeerorderservice.domain.BeerOrderStatus.NEW;
+import static guru.springframework.msscbeerorderservice.domain.BeerOrderStatus.*;
 
 @RequiredArgsConstructor
 @Service
@@ -38,7 +40,7 @@ public class BeerOrderManagerImpl implements BeerOrderManager {
         beerOrder.setId(null);
         beerOrder.setBeerOrderStatus(NEW);
 
-        BeerOrder savedBeerOrder = beerOrderRepository.save(beerOrder);
+        BeerOrder savedBeerOrder = beerOrderRepository.saveAndFlush(beerOrder);
         sendBeerOrderEvent(savedBeerOrder, VALIDATE_ORDER);
         return savedBeerOrder;
     }
@@ -52,6 +54,7 @@ public class BeerOrderManagerImpl implements BeerOrderManager {
                 sendBeerOrderEvent(beerOrder, VALIDATION_PASSED);
                 //volver a recuperarla de bbdd porque el interceptor la coge y la guarda
                 // Hibernate detecta una nueva versión del objeto
+                awaitForStatus(beerOrderId, VALIDATED);
                 BeerOrder validatedOrder = beerOrderRepository.findById(beerOrderId).get();
                 sendBeerOrderEvent(validatedOrder, ALLOCATE_ORDER);
             }
@@ -65,6 +68,7 @@ public class BeerOrderManagerImpl implements BeerOrderManager {
         Optional<BeerOrder> beerOrderOptional = beerOrderRepository.findById(beerOrderDto.getId());
         beerOrderOptional.ifPresent(beerOrder -> {
             sendBeerOrderEvent(beerOrder, ALLOCATION_SUCCESS);
+            awaitForStatus(beerOrder.getId(), ALLOCATED);
             updateAllocatedQty(beerOrderDto);
         });
     }
@@ -74,6 +78,7 @@ public class BeerOrderManagerImpl implements BeerOrderManager {
         Optional<BeerOrder> beerOrderOptional = beerOrderRepository.findById(beerOrderDto.getId());
         beerOrderOptional.ifPresent(beerOrder -> {
             sendBeerOrderEvent(beerOrder, ALLOCATION_NO_INVENTORY);
+            awaitForStatus(beerOrder.getId(), PENDING_INVENTORY);
             updateAllocatedQty(beerOrderDto);
         });
     }
@@ -86,10 +91,12 @@ public class BeerOrderManagerImpl implements BeerOrderManager {
 
     @Override
     public void beerOrderPickedUp(UUID id) {
-        Optional<BeerOrder> beerOrderOptional = beerOrderRepository.findById(id);
-        beerOrderOptional.ifPresent(beerOrder -> {
-            sendBeerOrderEvent(beerOrder, BEER_ORDER_PICKED_UP);
-        });
+        beerOrderRepository.findById(id).ifPresent(beerOrder -> sendBeerOrderEvent(beerOrder, BEER_ORDER_PICKED_UP));
+    }
+
+    @Override
+    public void cancelOrder(UUID id) {
+        beerOrderRepository.findById(id).ifPresent(beerOrder -> sendBeerOrderEvent(beerOrder, CANCEL_ORDER));
     }
 
     private void updateAllocatedQty(BeerOrderDto beerOrderDto) {
@@ -112,6 +119,26 @@ public class BeerOrderManagerImpl implements BeerOrderManager {
                 .setHeader(ORDER_ID_HEADER, beerOrder.getId().toString())
                 .build();
         sm.sendEvent(msg);
+    }
+
+    private void awaitForStatus(UUID beerOrderId, BeerOrderStatus beerOrderStatus) {
+        AtomicBoolean found = new AtomicBoolean(false);
+        AtomicInteger loopCount = new AtomicInteger(0);
+
+        while (!found.get()) {
+            if (loopCount.incrementAndGet() > 10)
+                found.set(true);
+            beerOrderRepository.findById(beerOrderId).ifPresent( beerOrder -> {
+                if (beerOrder.getBeerOrderStatus().equals(beerOrderStatus))
+                    found.set(true);
+            });
+            if (!found.get())
+                try {
+                    Thread.sleep(100);
+                } catch (Exception e) {
+
+                }
+        }
     }
 
     private StateMachine<BeerOrderStatus, BeerOrderEvent> build(BeerOrder beerOrder) {

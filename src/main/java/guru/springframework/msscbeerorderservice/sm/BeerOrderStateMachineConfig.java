@@ -22,17 +22,21 @@ public class BeerOrderStateMachineConfig extends StateMachineConfigurerAdapter<B
 
     private final Action<BeerOrderStatus, BeerOrderEvent> validateOrderAction;
     private final Action<BeerOrderStatus, BeerOrderEvent> allocateOrderAction;
+    private final Action<BeerOrderStatus, BeerOrderEvent> validationFailureAction;
+    private final Action<BeerOrderStatus, BeerOrderEvent> allocationFailureAction;
+    private final Action<BeerOrderStatus, BeerOrderEvent> deallocateOrderAction;
 
     @Override
     public void configure(StateMachineStateConfigurer<BeerOrderStatus, BeerOrderEvent> states) throws Exception {
         states.withStates()
                 .initial(NEW)
                 .states(EnumSet.allOf(BeerOrderStatus.class))
-                .end(BeerOrderStatus.PICKED_UP)
-                .end(BeerOrderStatus.DELIVERED)
-                .end(BeerOrderStatus.DELIVERY_EXCEPTION)
-                .end(BeerOrderStatus.VALIDATION_EXCEPTION)
-                .end(BeerOrderStatus.ALLOCATION_EXCEPTION);
+                .end(PICKED_UP)
+                .end(DELIVERED)
+                .end(CANCELLED)
+                .end(DELIVERY_EXCEPTION)
+                .end(VALIDATION_EXCEPTION)
+                .end(ALLOCATION_EXCEPTION);
     }
 
     @Override
@@ -42,15 +46,23 @@ public class BeerOrderStateMachineConfig extends StateMachineConfigurerAdapter<B
                 .and().withExternal()
                     .source(VALIDATION_PENDING).target(VALIDATED).event(VALIDATION_PASSED)
                 .and().withExternal()
-                    .source(VALIDATION_PENDING).target(VALIDATION_EXCEPTION).event(VALIDATION_FAILED)
+                    .source(VALIDATION_PENDING).target(CANCELLED).event(CANCEL_ORDER)
+                .and().withExternal()
+                    .source(VALIDATION_PENDING).target(VALIDATION_EXCEPTION).event(VALIDATION_FAILED).action(validationFailureAction)
                 .and().withExternal()
                     .source(VALIDATED).target(ALLOCATION_PENDING).event(ALLOCATE_ORDER).action(allocateOrderAction)
                 .and().withExternal()
+                    .source(VALIDATED).target(CANCELLED).event(CANCEL_ORDER)
+                .and().withExternal()
                     .source(ALLOCATION_PENDING).target(ALLOCATED).event(ALLOCATION_SUCCESS)
                 .and().withExternal()
-                    .source(ALLOCATION_PENDING).target(ALLOCATION_EXCEPTION).event(ALLOCATION_FAILED)
+                    .source(ALLOCATION_PENDING).target(ALLOCATION_EXCEPTION).event(ALLOCATION_FAILED).action(allocationFailureAction)
                 .and().withExternal()
                     .source(ALLOCATION_PENDING).target(PENDING_INVENTORY).event(ALLOCATION_NO_INVENTORY)
+                .and().withExternal()
+                    .source(ALLOCATION_PENDING).target(CANCELLED).event(CANCEL_ORDER)
+                .and().withExternal()
+                    .source(ALLOCATED).target(CANCELLED).event(CANCEL_ORDER).action(deallocateOrderAction)
                 .and().withExternal()
                     .source(ALLOCATED).target(PICKED_UP).event(BEER_ORDER_PICKED_UP);
     }
